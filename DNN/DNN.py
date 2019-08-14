@@ -57,7 +57,7 @@ class DNN:
         print(self.grads_shape)
     
     # x是(1,n)向量
-    def sigmoid(self.x):
+    def sigmoid(self, x):
         return 1.0 / (1.0 + np.exp(-x))
     
     def sigmoid_derivate(self, x):
@@ -77,12 +77,44 @@ class DNN:
         exp_all = np.exp(x)
         return exp_all / np.sum(exp_all)
     
+    def update_output(self, x, x_istest=False):
+        if x_istest == True:
+            x = (x - self.mean) / self.var
+        for idx in range(len(self.O)):
+            if idx = 0:
+                self.O[idx] = self.sigmoid(
+                        x.dot(self.W[idx]) + self.B[idx])
+            elif idx == len(self.O) - 1:
+                self.O[idx] = self.softmax(
+                        self.O[idx - 1].dot(self.W[idx]) + self.B[idx])
+            else:
+                self.O[idx] = self.sigmoid(
+                        self.O[idx - 1].dot(self.W[idx]) + self.B[idx])
+            
+            self.O[idx] = self.O[idx].reshape(self.O_shape[idx])
+            
+        self.y_hat = self.O[-1]
+        self.y_hat = self.y_hat.reshape(self.O[-1].shape)
+        return self.y_hat
     
+    def update_grads(self, y):
+        for idx in range(len(self.grads), -1, -1, -1):
+            if idx == len(self.grads) - 1:
+                tmp = np.argwhere(y==1)
+                for idx_g in range(self.grads[idx].shape[1]):
+                    if idx_g == tmp[0,1]:
+                        self.grads[idx][0, idx_g] = 1 - self.O[idx][0, idx_g]
+                    else:
+                        self.grads[idx][0, idx_g] = -self.O[idx][0, idx_g]
+            else:
+                self.grads[idx] = self.sigmoid_derivate(
+                        self.O[idx]) * self.W[idx+1].dot(self.grads[idx+1].T).T
+            self.grads[idx] = self.grads[idx].reshape(self.grads_shape[idx])
+    
+     def update_WB(self, x, learning_rate):
+         
+                
         
-        
-            
-            
-            
             
             
             
