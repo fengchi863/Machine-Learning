@@ -9,8 +9,10 @@ Created on Sat Aug 10 15:51:22 2019
 import numpy as np
 import matplotlib.pyplot as plt
 
+from sklearn.datasets import load_digits
+
 class DNN:
-    def __ini__(self, nn_shape=(2,4,1)):
+    def __init__(self, nn_shape=(2,4,1)):
         self.W = [] #权重
         self.B = [] #阈值
         self.O = [] #各个神经元的输出
@@ -61,17 +63,16 @@ class DNN:
         return 1.0 / (1.0 + np.exp(-x))
     
     def sigmoid_derivate(self, x):
-        return x * （1 - x)
+        return x * (1 - x)
     
     # 最小平方误差MSE
     def error(self, y, y_hat):
         err = y - y_hat
         return 0.5 * err.dot(err.T)
     
-    
     def cross_entropy(self, y, y_hat):
         tmp = np.argwhere(y==1)
-        return -np.log(y_hat[0, tmp[0,1])
+        return -np.log(y_hat[0, tmp[0,1]])
 
     def softmax(self, x):
         exp_all = np.exp(x)
@@ -81,7 +82,7 @@ class DNN:
         if x_istest == True:
             x = (x - self.mean) / self.var
         for idx in range(len(self.O)):
-            if idx = 0:
+            if idx == 0:
                 self.O[idx] = self.sigmoid(
                         x.dot(self.W[idx]) + self.B[idx])
             elif idx == len(self.O) - 1:
@@ -98,8 +99,11 @@ class DNN:
         return self.y_hat
     
     def update_grads(self, y):
-        for idx in range(len(self.grads), -1, -1, -1):
+        for idx in range(len(self.grads)-1, -1, -1):
             if idx == len(self.grads) - 1:
+                # 该代码用来计算使用均方误差和sigmoid函数的二分类问题
+#                self.grads[index] = self.sigmoid_derivate(
+#                        self.O[index]) * (y - self.O[index])
                 tmp = np.argwhere(y==1)
                 for idx_g in range(self.grads[idx].shape[1]):
                     if idx_g == tmp[0,1]:
@@ -111,10 +115,91 @@ class DNN:
                         self.O[idx]) * self.W[idx+1].dot(self.grads[idx+1].T).T
             self.grads[idx] = self.grads[idx].reshape(self.grads_shape[idx])
     
-     def update_WB(self, x, learning_rate):
-         
+    def update_WB(self, x, learning_rate):
+        for idx in range(len(self.W)):
+            if idx == 0:
+                self.W[idx] += learning_rate * x.T.dot(self.grads[idx])
+                self.B[idx] -= learning_rate * self.grads[idx]
+            else:
+                self.W[idx] += learning_rate * self.O[idx-1].T.dot(self.grads[idx])
+                self.B[idx] -= learning_rate * self.grads[idx]
+            self.B[idx] = self.B[idx].reshape(self.B_shape[idx])
+    
+    def preprocess(self, X, method='centring'):
+        self.mean = np.mean(X, axis=0)
+        self.var = X.var()
+        X = (X - self.mean) / self.var
+        if method == 'centring':
+            return X
+
+    def fit(self, X, Y, Preprocess=True, method='centring', thre=0.03, learning_rate=0.001, max_iter=1000):
+        if Preprocess == True:
+            X = self.preprocess(X,method=method)
+        err = np.inf
+        count = 0
+        while err > thre:
+            err = 0
+            for idx in range(X.shape[0]):
+                x = X[idx,:].reshape((1,-1))
+                y = Y[idx,:].reshape((1,-1))
                 
+                self.update_output(x)
+                x = X[idx,:].reshape((1,-1))
+                self.update_grads(y)
+                self.update_WB(x, learning_rate=learning_rate)
+                err += self.cross_entropy(y, self.y_hat)
+            err /= idx + 1
+            self.errs.append(err)
+            count += 1
+            if count > max_iter:
+                print("超过最大迭代次数{}".format(max_iter))
+                break
+            
+            print(count)
+            print(err)
+            
+    def one_hot_label(self, Y):
+        category = list(set(Y[:,0]))
+        Y_ = np.zeros([Y.shape[0], len(category)])
         
+        for idx in range(Y.shape[0]):
+            Y_[idx, Y[idx, 0]] = 1
+        
+        return Y_
+    
+if __name__ == '__main__':
+    
+    digits = load_digits()
+    X = digits.data
+    Y = digits.target
+    X = X.reshape(X.shape)
+    Y = Y.reshape(Y.shape[0], 1)
+    bp = DNN([64,128,64,10])
+    Y = bp.one_hot_label(Y)
+    
+    train_data = X[:1000, :]
+    train_label = Y[:1000, :]
+    
+    test_data = X[1000:-1, :]
+    test_label = Y[1000:-1, :]
+    
+    bp.fit(train_data, train_label, Preprocess=True, thre=0.01,learning_rate=0.005,
+           max_iter=1000)
+    count = 0
+    for idx in range(test_data.shape[0]):
+        x = test_data[idx].reshape(1,64)
+        pre = bp.update_output(x, x_istest=True)
+        y = test_label[idx].reshape(1,10)
+        a = np.where(pre==np.max(pre)) #获得最大的数字的坐标
+        b = np.where(y==np.max(y))
+        if a[1][0] == b[1][0]:
+            count += 1
+        
+    print('准确率:{}'.format(count/test_label.shape[0]))
+    plt.plot(bp.errs)
+    plt.show()
+    
+                    
             
             
             
