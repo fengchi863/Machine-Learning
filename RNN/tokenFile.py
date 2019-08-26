@@ -7,6 +7,7 @@ Created on Tue Aug 20 19:54:17 2019
 
 import numpy as np
 import nltk, itertools, csv
+nltk.download('punkt')
 
 TXTCODING = 'utf-8'
 unknown_token = 'UNKNOWN_TOKEN'
@@ -22,14 +23,13 @@ class tokenFile2vector:
     # 将文本拆成句子，并加上句子开始和结束标志
     def _get_sentences(self):
         sents = []
-        with open(self.file_path, 'rb') as f:
+        with open(self.file_path, 'rt', encoding='utf-8') as f:
             reader = csv.reader(f, skipinitialspace=True)
-            # 去掉表头 
-            reader.next()
             # 解析每个评论为句子
-            sents = itertools.chain(*[nltk.sent_tokenize(x[0].decode(TXTCODING).lower()) for x in reader])
+            sents = itertools.chain(*[nltk.sent_tokenize(x[0].lower()) for x in reader])
             sents = ['%s %s %s' % (start_token, sent, end_token) for sent in sents]
-            print 'Get {} sentences.'.format(len(sents))
+            del(sents[0])
+            print('Get {} sentences.'.format(len(sents)))
 
             return sents
 
@@ -37,7 +37,7 @@ class tokenFile2vector:
     def _get_dict_wordsIndex(self, sents):
         sent_words = [nltk.word_tokenize(sent) for sent in sents]
         word_freq = nltk.FreqDist(itertools.chain(*sent_words))
-        print 'Get {} words.'.format(len(word_freq))
+        print('Get {} words.'.format(len(word_freq)))
 
         common_words = word_freq.most_common(self.dict_size-1)
         # 生成词典
