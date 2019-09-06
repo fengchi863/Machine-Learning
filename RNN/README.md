@@ -24,3 +24,8 @@ epoch 8: loss = 5.759992751817624
 epoch 9: loss = 5.683133239197967
 epoch 10: loss = 5.614594634265638
 Generate sentence:day and from auch you 're to and ya to gt divide time convinced maybe blows ,
+
+
+### 参考文献
+https://www.cnblogs.com/pinard/p/6509630.html#!comments
+https://blog.csdn.net/flyinglittlepig/article/details/72229041
